@@ -1,8 +1,8 @@
 """Public package surface for paper-fetch."""
 
+from .artifact_repair_hook import install_artifact_markdown_repair_hook
 from .markdown_repair import (
     MarkdownRepairReport,
-    install_markdown_save_hook,
     repair_latex_structure,
     repair_markdown_file,
     repair_markdown_text,
@@ -18,11 +18,8 @@ from .models import (
     TokenEstimateBreakdown,
 )
 from .service import FetchStrategy, PaperFetchFailure, fetch_paper, resolve_paper
-from .workflow import pipeline as _pipeline
-from .workflow import rendering as _rendering
 
-install_markdown_save_hook()
-_pipeline.save_markdown_to_disk = _rendering.save_markdown_to_disk
+install_artifact_markdown_repair_hook()
 
 __all__ = [
     "ArticleModel",
