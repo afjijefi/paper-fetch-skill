@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paper-fetch-skill"
-version = "3.1.4"
+version = "3.1.5"
 description = "AI-friendly paper fetch tooling"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -48,6 +48,7 @@ paper-fetch = "paper_fetch.cli:main"
 paper-fetch-mcp = "paper_fetch.mcp.server:main"
 paper-fetch-install-formula-tools = "paper_fetch.formula.install:main"
 paper-fetch-install-image-tools = "paper_fetch.image_tools.install:main"
+paper-fetch-html-pdf = "paper_fetch.html_pdf:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -87,7 +88,7 @@ ignore = ["B008"]
 "paper_fetch.providers.html_assets".msg = "Removed compatibility module; import paper_fetch.extraction.html.assets instead."
 "paper_fetch.providers.pnas_html".msg = "Removed compatibility module; import paper_fetch.providers._pnas_html instead."
 "paper_fetch.providers.science_html".msg = "Removed compatibility module; import paper_fetch.providers._science_html instead."
-"paper_fetch.providers.springer_html".msg = "Removed compatibility module; import paper_fetch.providers._springer_html instead."
+"paper_fetch.providers.springer_html".msg = "Removed compatibility module; import paper_fetch.providers.springer_html instead."
 "paper_fetch.providers.wiley_html".msg = "Removed compatibility module; import paper_fetch.providers._wiley_html instead."
 "paper_fetch.extraction.html._assets".msg = "Removed compatibility module; import paper_fetch.extraction.html.assets instead."
 "paper_fetch.resolve.crossref".msg = "Removed compatibility module; import paper_fetch.metadata.crossref instead."
@@ -146,6 +147,7 @@ files = [
   "src/paper_fetch/providers/_cloakbrowser.py",
   "src/paper_fetch/service.py",
   "src/paper_fetch/resolve/query.py",
+  "src/paper_fetch/html_pdf.py",
 ]
 check_untyped_defs = true
 ignore_missing_imports = true
