@@ -1,5 +1,13 @@
 """Public package surface for paper-fetch."""
 
+from .markdown_repair import (
+    MarkdownRepairReport,
+    install_markdown_save_hook,
+    repair_latex_structure,
+    repair_markdown_file,
+    repair_markdown_text,
+    validate_latex_structure,
+)
 from .models import (
     ArticleModel,
     FetchEnvelope,
@@ -10,18 +18,11 @@ from .models import (
     TokenEstimateBreakdown,
 )
 from .service import FetchStrategy, PaperFetchFailure, fetch_paper, resolve_paper
-from .markdown_repair import (
-    MarkdownRepairReport,
-    install_markdown_save_hook,
-    repair_latex_structure,
-    repair_markdown_file,
-    repair_markdown_text,
-    validate_latex_structure,
-)
+from .workflow import pipeline as _pipeline
+from .workflow import rendering as _rendering
 
-# Install after the normal service imports complete. CLI imports of
-# workflow.rendering.save_markdown_to_disk then receive the wrapped saver.
 install_markdown_save_hook()
+_pipeline.save_markdown_to_disk = _rendering.save_markdown_to_disk
 
 __all__ = [
     "ArticleModel",
