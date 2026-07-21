@@ -1,5 +1,10 @@
 """Public package surface for paper-fetch."""
 
+from .article_pdf import (
+    ArticlePdfResult,
+    obtain_article_pdf,
+    official_pdf_candidates_from_html,
+)
 from .artifact_repair_hook import install_artifact_markdown_repair_hook
 from .html_pdf import (
     HtmlPdfActionRequired,
@@ -30,6 +35,7 @@ install_artifact_markdown_repair_hook()
 
 __all__ = [
     "ArticleModel",
+    "ArticlePdfResult",
     "FetchEnvelope",
     "FetchStrategy",
     "HtmlPdfActionRequired",
@@ -44,6 +50,8 @@ __all__ = [
     "Section",
     "TokenEstimateBreakdown",
     "fetch_paper",
+    "obtain_article_pdf",
+    "official_pdf_candidates_from_html",
     "render_article_to_pdf",
     "repair_latex_structure",
     "repair_markdown_file",
