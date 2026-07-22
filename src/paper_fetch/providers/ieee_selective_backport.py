@@ -1,6 +1,6 @@
 """Selective IEEE backports from upstream 3.2 without changing browser backend.
 
-This module is intentionally opt-in.  Auto-Paper-Download imports and installs it
+This module is intentionally opt-in. Auto-Paper-Download imports and installs it
 at startup so its existing bundled Chromium/CDP pool remains authoritative.
 """
 
@@ -12,7 +12,6 @@ from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 from collections.abc import Mapping
 
-from ..extraction.html.assets import browser_asset_recovery_allowed
 from ..reason_codes import ERROR, NO_RESULT
 from ..runtime_browser import browser_context_options
 from ..utils import normalize_text
@@ -40,11 +39,7 @@ _VARIANT_SUFFIX = re.compile(
 
 
 def html_browser_recovery_allowed(failure: ProviderFailure | None) -> bool:
-    """Only retry browser-recoverable IEEE HTML failures.
-
-    Rate limiting and explicit non-results should continue to the next route
-    without opening another browser page.
-    """
+    """Only retry browser-recoverable IEEE HTML failures."""
 
     if failure is None:
         return True
@@ -54,9 +49,15 @@ def html_browser_recovery_allowed(failure: ProviderFailure | None) -> bool:
     if status_match is not None:
         return int(status_match.group(1)) in {401, 403}
     lowered = normalize_text(failure.message).lower()
-    if any(token in lowered for token in ("rate limit", "too many requests", "http 429")):
+    if any(
+        token in lowered
+        for token in ("rate limit", "too many requests", "http 429")
+    ):
         return False
-    if any(token in lowered for token in ("did not include #article", "empty #article shell")):
+    if any(
+        token in lowered
+        for token in ("did not include #article", "empty #article shell")
+    ):
         return True
     return failure.code in {ERROR, NO_RESULT}
 
@@ -67,13 +68,16 @@ def _media_family(url: str) -> str:
         return ""
     parsed = urlsplit(value)
     path = _VARIANT_SUFFIX.sub("", parsed.path.lower())
-    normalized = urlunsplit((parsed.scheme.lower(), parsed.netloc.lower(), path, "", ""))
-    return normalized
+    return urlunsplit((parsed.scheme.lower(), parsed.netloc.lower(), path, "", ""))
 
 
 def _asset_quality(asset: Mapping[str, Any]) -> tuple[int, int, int, int]:
     urls = [normalize_text(str(asset.get(field) or "")) for field in _URL_FIELDS]
-    has_large = any(re.search(r"-(?:large|full)\.[a-z0-9]+$", urlsplit(url).path, re.I) for url in urls if url)
+    has_large = any(
+        re.search(r"-(?:large|full)\.[a-z0-9]+$", urlsplit(url).path, re.I)
+        for url in urls
+        if url
+    )
     has_full_field = bool(normalize_text(str(asset.get("full_size_url") or "")))
     try:
         pixels = int(asset.get("width") or 0) * int(asset.get("height") or 0)
@@ -103,7 +107,9 @@ def _browser_landing_attempt(
             user_agent=client.browser_user_agent,
             extra_http_headers={"Accept-Language": "en-US,en;q=0.9"},
         )
-        browser_context = runtime_context.new_playwright_context(headless=True, **options)
+        browser_context = runtime_context.new_playwright_context(
+            headless=True, **options
+        )
         page = browser_context.new_page()
         with contextlib.suppress(Exception):
             page.goto(landing_url, wait_until="commit", timeout=60_000)
@@ -115,7 +121,9 @@ def _browser_landing_attempt(
                 timeout=8_000,
             )
         html_text = str(page.content() or "")
-        response_url = normalize_text(str(getattr(page, "url", "") or "")) or landing_url
+        response_url = (
+            normalize_text(str(getattr(page, "url", "") or "")) or landing_url
+        )
         landing_metadata = ieee_metadata._parse_landing_metadata(html_text)
         article_number = (
             ieee_url._article_number_from_metadata(landing_metadata)
@@ -150,8 +158,8 @@ def _browser_landing_attempt(
         message = normalize_text(str(exc)) or exc.__class__.__name__
         raise ProviderFailure(
             ERROR,
-            "IEEE landing retrieval failed through direct HTTP and shared-browser recovery "
-            f"({direct_failure.message}; {message}).",
+            "IEEE landing retrieval failed through direct HTTP and shared-browser "
+            f"recovery ({direct_failure.message}; {message}).",
         ) from exc
     finally:
         if page is not None:
@@ -167,7 +175,6 @@ def install() -> None:
         return
 
     original_identity_values = ieee_html._ieee_asset_identity_values
-    original_select_survivor = ieee_html._select_ieee_asset_survivor
     original_fetch_raw = ieee.IeeeClient.fetch_raw_fulltext
     original_fetch_landing = ieee.IeeeClient._fetch_landing_attempt
     original_fetch_browser_html = ieee.IeeeClient._fetch_browser_html_payload
@@ -182,8 +189,12 @@ def install() -> None:
                     values.append(marker)
         return values
 
-    def select_survivor(candidates: list[dict[str, Any]], current_assets: list[dict[str, Any]]):
-        current_order = {id(asset): index for index, asset in enumerate(current_assets)}
+    def select_survivor(
+        candidates: list[dict[str, Any]], current_assets: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        current_order = {
+            id(asset): index for index, asset in enumerate(current_assets)
+        }
         fallback_order = len(current_assets)
         return max(
             candidates,
@@ -194,26 +205,22 @@ def install() -> None:
             ),
         )
 
-    def fetch_raw_fulltext(self: Any, doi: str, metadata: Any, *, context: Any = None):
+    def fetch_raw_fulltext(
+        self: Any, doi: str, metadata: Any, *, context: Any = None
+    ) -> Any:
         self._ieee_backport_runtime_context = self._runtime_context(context)
         try:
             return original_fetch_raw(self, doi, metadata, context=context)
         finally:
             self._ieee_backport_runtime_context = None
 
-    def fetch_landing_attempt(self: Any, doi: str, metadata: Mapping[str, Any]):
+    def fetch_landing_attempt(
+        self: Any, doi: str, metadata: Mapping[str, Any]
+    ) -> ieee_metadata.IeeeLandingAttempt:
         try:
             return original_fetch_landing(self, doi, metadata)
         except ProviderFailure as failure:
-            status_match = re.search(r"\bHTTP\s+(\d{3})\b", failure.message, re.I)
-            status = int(status_match.group(1)) if status_match else None
-            allowed = browser_asset_recovery_allowed(
-                status=status,
-                content_type="text/html",
-                reason=failure.message,
-                error_category="",
-            ) or html_browser_recovery_allowed(failure)
-            if not allowed:
+            if not html_browser_recovery_allowed(failure):
                 raise
             return _browser_landing_attempt(self, doi, metadata, failure)
 
@@ -223,7 +230,7 @@ def install() -> None:
         *,
         direct_html_failure: ProviderFailure | None,
         context: Any,
-    ):
+    ) -> Any:
         if not html_browser_recovery_allowed(direct_html_failure):
             raise direct_html_failure or ProviderFailure(
                 NO_RESULT, "IEEE browser HTML recovery was not eligible."
